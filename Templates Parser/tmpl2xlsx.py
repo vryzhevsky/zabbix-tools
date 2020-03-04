@@ -119,36 +119,36 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
 
         logger.info("Adding Discovery rules")
 
-        if 'discovery_rules' not in template:
-            logger.info("No discovery rules found. Go to next template")
-            continue
+        if 'discovery_rules' in template:
+            drs = template['discovery_rules']['discovery_rule']
+            if type(drs) is dict:
+                drs = [drs]
+
+            for dr in drs:
+                logger.info("Processing rule '%s'" % dr['name'])
+
+                worksheet.merge_range('A%s:C%s' % (index, index),
+                                      dr['name'], item_header)
+                index = index + 1
+
+                logger.info("Adding item prototypes")
+
+                if 'item_prototypes' in dr:
+                    items = dr['item_prototypes']['item_prototype']
+                    if type(items) is dict:
+                        items = [items]
+
+                    for item in items:
+                        worksheet.write('A%s' % index, item['name'], item_text)
+                        worksheet.write('B%s' % index, item['key'], item_text)
+                        worksheet.write('C%s' % index, item.get('description',''), item_text)
+                        max_length_A = max(max_length_A, len(item['name']))
+                        max_length_B = max(max_length_B, len(item['key']))
+                        max_length_C = max(max_length_C, len(item.get('description','')))
+                        index = index + 1
         
-        drs = template['discovery_rules']['discovery_rule']
-        if type(drs) is dict:
-            drs = [drs]
-
-        for dr in drs:
-            logger.info("Processing rule '%s'" % dr['name'])
-
-            worksheet.merge_range('A%s:C%s' % (index, index),
-                                  dr['name'], item_header)
-            index = index + 1
-
-            logger.info("Adding item prototypes")
-
-            if 'item_prototypes' in dr:
-                items = dr['item_prototypes']['item_prototype']
-                if type(items) is dict:
-                    items = [items]
-
-                for item in items:
-                    worksheet.write('A%s' % index, item['name'], item_text)
-                    worksheet.write('B%s' % index, item['key'], item_text)
-                    worksheet.write('C%s' % index, item.get('description',''), item_text)
-                    max_length_A = max(max_length_A, len(item['name']))
-                    max_length_B = max(max_length_B, len(item['key']))
-                    max_length_C = max(max_length_C, len(item.get('description','')))
-                    index = index + 1
+        else:
+            logger.info("No discovery rules found. Go to triggers")
 
         logger.info("Adding triggers")
 
@@ -204,59 +204,60 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
 
         logger.info("Adding Discovery rules")
 
-        if template['discovery_rules'] is None:
+        if 'discovery_rules' in template:
+          drs = template['discovery_rules']['discovery_rule']
+          if type(drs) is dict:
+              drs = [drs]
+
+          for dr in drs:
+              logger.info("Processing rule '%s'" % dr['name'])
+
+              worksheet.merge_range('A%s:C%s' % (index, index),
+                                    dr['name'], item_header)
+              index = index + 1
+
+              logger.info("Adding trigger prototypes")
+
+              if 'trigger_prototypes' in dr:
+                  triggers = dr['trigger_prototypes']['trigger_prototype']
+                  if type(triggers) is dict:
+                      triggers = [triggers]
+
+                  for trigger in triggers:
+                      worksheet.write('A%s' % index, trigger['name'], trigger_severity[trigger['priority']])
+                      worksheet.write('B%s' % index, trigger['expression'], trigger_severity[trigger['priority']])
+                      worksheet.write('C%s' % index, trigger['priority'], trigger_severity[trigger['priority']])
+                      max_length_A = max(max_length_A, len(trigger['name']))
+                      max_length_B = max(max_length_B, len(trigger['expression']))
+                      max_length_C = max(max_length_C, len('Description'))
+                      index = index + 1
+
+              logger.info("Adding trigger prototypes from item prototypes")
+              if 'item_prototypes' in dr:
+                  items = dr['item_prototypes']['item_prototype']
+                  if type(items) is dict:
+                      items = [items]
+
+                  for item in items:
+                    if "trigger_prototypes" in item:
+                      triggers = item['trigger_prototypes']['trigger_prototype']
+                      if type(triggers) is dict:
+                          triggers = [triggers]
+                      for trigger in triggers:
+                          logger.info("Adding item trigger <%s>" % trigger['name'])
+                          trigger_exp = trigger['expression'].replace(":", "-")
+                          logger.info(trigger_exp)
+                          worksheet.write('A%s' % index, trigger['name'], trigger_severity[trigger['priority']])
+                          worksheet.write('B%s' % index, trigger_exp, trigger_severity[trigger['priority']])
+                          worksheet.write('C%s' % index, trigger['priority'], trigger_severity[trigger['priority']])
+                          max_length_A = max(max_length_A, len(trigger['name']))
+                          max_length_B = max(max_length_B, len(trigger['expression']))
+                          max_length_C = max(max_length_C, len('Description'))
+                          index = index + 1
+
+        else:
             logger.info("No discovery rules found. Go to next template")
-            continue
-        
-        drs = template['discovery_rules']['discovery_rule']
-        if type(drs) is dict:
-            drs = [drs]
 
-        for dr in drs:
-            logger.info("Processing rule '%s'" % dr['name'])
-
-            worksheet.merge_range('A%s:C%s' % (index, index),
-                                  dr['name'], item_header)
-            index = index + 1
-
-            logger.info("Adding trigger prototypes")
-
-            if 'trigger_prototypes' in dr:
-                triggers = dr['trigger_prototypes']['trigger_prototype']
-                if type(triggers) is dict:
-                    triggers = [triggers]
-
-                for trigger in triggers:
-                    worksheet.write('A%s' % index, trigger['name'], trigger_severity[trigger['priority']])
-                    worksheet.write('B%s' % index, trigger['expression'], trigger_severity[trigger['priority']])
-                    worksheet.write('C%s' % index, trigger['priority'], trigger_severity[trigger['priority']])
-                    max_length_A = max(max_length_A, len(trigger['name']))
-                    max_length_B = max(max_length_B, len(trigger['expression']))
-                    max_length_C = max(max_length_C, len('Description'))
-                    index = index + 1
-
-            logger.info("Adding trigger prototypes from item prototypes")
-            if 'item_prototypes' in dr:
-                items = dr['item_prototypes']['item_prototype']
-                if type(items) is dict:
-                    items = [items]
-
-                for item in items:
-                  if "trigger_prototypes" in item:
-                    triggers = item['trigger_prototypes']['trigger_prototype']
-                    if type(triggers) is dict:
-                        triggers = [triggers]
-                    for trigger in triggers:
-                        logger.info("Adding item trigger <%s>" % trigger['name'])
-                        trigger_exp = trigger['expression'].replace(":", "-")
-                        logger.info(trigger_exp)
-                        worksheet.write('A%s' % index, trigger['name'], trigger_severity[trigger['priority']])
-                        worksheet.write('B%s' % index, trigger_exp, trigger_severity[trigger['priority']])
-                        worksheet.write('C%s' % index, trigger['priority'], trigger_severity[trigger['priority']])
-                        max_length_A = max(max_length_A, len(trigger['name']))
-                        max_length_B = max(max_length_B, len(trigger['expression']))
-                        max_length_C = max(max_length_C, len('Description'))
-                        index = index + 1
 
 
     worksheet.set_column('A:A', max_length_A)
