@@ -15,7 +15,7 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
     logger = logging.getLogger('tom')
     logger.info("Processing file %s" % infile)
 
-    with open(infile, 'r') as f:
+    with open(infile, 'r', encoding="utf-8") as f:
         file_content = f.read()
         f.close
 
@@ -247,6 +247,7 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
                         items = [items]
 
                     for item in items:
+                        triggers = []
                         if "trigger_prototypes" in item:
                             triggers =\
                                 item['trigger_prototypes']['trigger_prototype']
