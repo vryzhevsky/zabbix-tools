@@ -3,6 +3,8 @@
 
 import sys
 import os
+import random
+import string
 import hashlib
 import re
 import json
@@ -18,6 +20,7 @@ commands = [
     "/chatid - ID чата",
     "/alerts - список текущих проблем со средним приоритетом",
     "/problems - список текущих проблем с высоким приоритетом",
+    "/inventory - выгрузка списка оборудования",
     "/help - справочник команд",
     # "/graph",
     # "/history",
@@ -75,6 +78,41 @@ def cmd_alerts(reply_text, zbx):
     else:
         reply_text.append("Алертов нет. Хорошего дня!")
     return reply_text
+
+def cmd_inventory(reply_text, zbx):
+    #reply_text.append("Проблем нет. Хорошего дня!")
+    #return
+    inventory = zbx.get_inventory()
+    reply_file = None
+    if inventory:
+        myinv = json.loads(inventory)
+        if "result" in myinv:
+            reply_text.append("Инвентарная информация во вложении")
+
+            reply_file = "/tmp/zbxtg_inv."
+            reply_file += "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
+            reply_file += ".txt"
+            with open(reply_file, 'w') as fp:
+                fp.write("Name\tType\tType Full\tSerial\tPN\tVendor\tModel\tMGMT IP\n")
+                for host in myinv['result']:
+                    if host['inventory']['type'] == "noinventory":
+                        continue
+                    fp.write(
+                        "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(
+                            host['name'],
+                            host['inventory']['type'],
+                            host['inventory']['type_full'],
+                            host['inventory']['serialno_a'],
+                            host['inventory']['serialno_b'],
+                            host['inventory']['vendor'],
+                            host['inventory']['model'],
+                            host['inventory']['oob_ip']
+                        )
+                    )
+
+    else:
+        reply_text.append("Инвентарная информация не найдена")
+    return reply_text, reply_file
 
 def main():
     global tg
@@ -194,6 +232,7 @@ def main():
 
                         text = m1["text"]
                         reply_text = list()
+                        reply_file = None
                         if m1["chat"]["type"] != "private":
                             tg.reply_to_message_id = m1["message_id"]
                         if re.search(r"^/chatid", text):
@@ -202,14 +241,9 @@ def main():
                         if re.search(r"^/(start|help)", text):
                             print("Chat: {0}, Command: {1}".format(to,text))
                             cmd_help(reply_text)
-                        if re.search(r"^/lic", text):
-                            print("Chat: {0}, Command: {1}".format(to,text))
-                            if m1["chat"]["id"] in zbxtg_daemon.tom_lic_ids:
-                                reply_text.append(cmd_lic(text))
-                            else:
-                                reply_text.append("Нет прав для генерации лицензии")
 
-                        if re.search(r"^/problems", text) or re.search(r"^/alerts", text):
+                        if re.search(r"^/problems", text) or re.search(r"^/alerts", text)\
+                            or re.search(r"^/inventory", text):
                             zbx_api_user = None
                             zbx_api_pass = None
                             try:
@@ -226,26 +260,32 @@ def main():
                                 zbx.verify = zbx_api_verify
                             except:
                                 pass
-                            if zbx_api_user and zbx_api_pass:
-                                zbx.login()
-                                zbx.api_test()
+                            try:
+                                if zbx_api_user and zbx_api_pass:
+                                    zbx.login()
+                                    zbx.api_test()
 
-                                print("Chat: {0}, Command: {1}".format(to,text))
+                                    print("Chat: {0}, Command: {1}".format(to,text))
 
-                                if re.search(r"^/problems", text):
+                                    if re.search(r"^/problems", text):
                                         reply_text = cmd_problems(reply_text, zbx)
                                         if not reply_text:
                                             reply_text = ["Проблемы не найдены"]
                                         zbx = None
-                                if re.search(r"^/alerts", text):
+                                    if re.search(r"^/alerts", text):
                                         reply_text = cmd_alerts(reply_text, zbx)
                                         if not reply_text:
                                             reply_text = ["Алерты не найдены"]
                                         zbx = None
-                            else:
-                                reply_text = ["Нет учетной записи в системе мониторинга"]
+                                    if re.search(r"^/inventory", text):
+                                        reply_text, reply_file = cmd_inventory(reply_text, zbx)
+                                        zbx = None
+                                else:
+                                    reply_text = ["Нет учетной записи в системе мониторинга"]
+                            except:
+                                pass
 
-                        if not reply_text:
+                        if not reply_text and not reply_file:
                             continue
                             # reply_text = ["Извини, я не знаю, что ответить! Для подсказок набери /help"]
                         # replace text with emojis
@@ -258,7 +298,14 @@ def main():
                                 reply_text_emoji_support.append(l_new)
                             reply_text = reply_text_emoji_support
 
-                        if tg.send_message(to, reply_text):
+                        if reply_file:
+                            tg.send_file(to, reply_text, reply_file)
+                            os.remove(reply_file)
+                            with open(message_id_file, "w") as message_id_file:
+                                message_id_file.write(str(m1["message_id"]))
+                            message_id_last = m1["message_id"]
+                            tg.disable_web_page_preview = False
+                        elif tg.send_message(to, reply_text):
                             with open(message_id_file, "w") as message_id_file:
                                 message_id_file.write(str(m1["message_id"]))
                             message_id_last = m1["message_id"]

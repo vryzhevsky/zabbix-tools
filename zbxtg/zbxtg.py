@@ -176,6 +176,22 @@ class TelegramAPI:
         self.ok_update()
         return self.result
 
+    def send_file(self, to, message, path):
+        url = self.tg_url_bot_general + self.key + "/sendDocument"
+        params = {"chat_id": to, "caption": message, "disable_notification": self.disable_notification}
+        if self.reply_to_message_id:
+            params["reply_to_message_id"] = self.reply_to_message_id
+        files = {"document": open(path, 'rb')}
+        if self.debug:
+            print_message("Trying to /sendDocument:")
+            print_message(url)
+            print_message(params)
+            print_message("files: " + str(files))
+        answer = requests.post(url, params=params, files=files, proxies=self.proxies)
+        self.result = answer.json()
+        self.ok_update()
+        return self.result
+
     def get_uid(self, name):
         uid = 0
         if self.debug:
@@ -394,7 +410,24 @@ class ZabbixWeb:
         api_data = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "auth": self.auth, "id": 1})
         api_url = self.server + "/api_jsonrpc.php"
         api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers)
-        #print(api.text)
+        # print(api.text)
+        return api.text
+
+    def get_inventory(self):
+        headers = {'Content-type': 'application/json'}
+        method = "host.get"
+        params = {
+            "output" : [
+                "hostid",
+                "host",
+                "name"
+                ],
+            "selectInventory" : "extend"
+        }
+        api_data = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "auth": self.auth, "id": 1})
+        api_url = self.server + "/api_jsonrpc.php"
+        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers)
+        # print(api.text)
         return api.text
 
 def print_message(message):
