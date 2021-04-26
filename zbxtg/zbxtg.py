@@ -382,7 +382,7 @@ class ZabbixWeb:
         api_data = json.dumps({"jsonrpc": "2.0", "method": "user.login", "params":
                               {"user": self.username, "password": self.password}, "id": 1})
         api_url = self.server + "/api_jsonrpc.php"
-        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers)
+        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers, verify=self.verify)
 
         resp = json.loads(api.text)
 
@@ -409,7 +409,7 @@ class ZabbixWeb:
         }
         api_data = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "auth": self.auth, "id": 1})
         api_url = self.server + "/api_jsonrpc.php"
-        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers)
+        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers, verify=self.verify)
         # print(api.text)
         return api.text
 
@@ -426,7 +426,7 @@ class ZabbixWeb:
         }
         api_data = json.dumps({"jsonrpc": "2.0", "method": method, "params": params, "auth": self.auth, "id": 1})
         api_url = self.server + "/api_jsonrpc.php"
-        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers)
+        api = requests.post(api_url, data=api_data, proxies=self.proxies, headers=headers, verify=self.verify)
         # print(api.text)
         return api.text
 
