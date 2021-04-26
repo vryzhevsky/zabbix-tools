@@ -149,9 +149,9 @@ def main():
         if not proxy_to_tg.find("http") and not proxy_to_tg.find("socks"):
             proxy_to_tg = "https://" + proxy_to_tg
         tg.proxies = {
-            "https": "socks5://{0}".format(zbxtg_settings.proxy_to_tg),
-            "http": "socks5://{0}".format(zbxtg_settings.proxy_to_tg),
-            #"socks5": "socks5://{0}".format(zbxtg_settings.proxy_to_tg),
+            "https": "{0}".format(zbxtg_settings.proxy_to_tg),
+            "http": "{0}".format(zbxtg_settings.proxy_to_tg),
+            "socks5": "{0}".format(zbxtg_settings.proxy_to_tg),
         }
 
     me = tg.get_me()
