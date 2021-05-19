@@ -113,6 +113,8 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
         logger.info("Adding Discovery rules")
 
         if 'discovery_rules' in template:
+            if template['discovery_rules'] is None:
+                continue
             drs = template['discovery_rules']['discovery_rule']
             if type(drs) is dict:
                 drs = [drs]
