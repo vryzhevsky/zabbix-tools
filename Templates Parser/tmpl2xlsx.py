@@ -140,8 +140,10 @@ def tmpl2xlsx(infile, xlsx_dir, workbook):
                                         item.get('description', ''), item_text)
                         max_length_A = max(max_length_A, len(item['name']))
                         max_length_B = max(max_length_B, len(item['key']))
-                        max_length_C = max(max_length_C,
-                                           len(item.get('description', '')))
+                        max_length_C = max(
+                            max_length_C,
+                            len(str(item.get('description', '')))
+                            )
                         index = index + 1
 
         else:
